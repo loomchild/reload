@@ -19,7 +19,7 @@ class Reloader:
     def stop_command(self):
         if self.pid > 0:
             try:
-                os.killpg(self.pid, sig)
+                os.killpg(self.pid, self.sig)
             except OSError:
                 pass
             self.pid = 0
@@ -49,30 +49,35 @@ class ReloadEventHandler(RegexMatchingEventHandler):
             return False
 
 
+def main():
+    path = "."
+    sig = signal.SIGTERM
+    delay = 0.5
+    command = sys.argv[1:]
+    ignore_patterns = ['.*/[^/]*\.swp', '.*/\d{4}']
 
-path = "."
-sig = signal.SIGTERM
-delay = 0.5
-command = sys.argv[1:]
-ignore_patterns = ['.*/[^/]*\.swp', '.*/\d{4}']
+    event_handler = ReloadEventHandler(ignore_patterns)
+    reloader = Reloader(command, signal)
 
-event_handler = ReloadEventHandler(ignore_patterns)
-reloader = Reloader(command, signal)
+    observer = Observer()
+    observer.schedule(event_handler, path, recursive=True)
+    observer.start()
 
-observer = Observer()
-observer.schedule(event_handler, path, recursive=True)
-observer.start()
+    reloader.start_command()
 
-reloader.start_command()
+    try:
+        while True:
+            time.sleep(delay)
+            if event_handler.modified:
+                reloader.restart_command()
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
 
-try:
-    while True:
-        time.sleep(delay)
-        if event_handler.modified:
-            reloader.restart_command()
-except KeyboardInterrupt:
-    observer.stop()
-observer.join()
+    reloader.stop_command()
 
-reloader.stop_command()
+
+if __name__ == "__main__":
+    main()
+
 
