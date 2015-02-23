@@ -2,7 +2,7 @@
 
 import sys, time, re, os, subprocess, signal
 from watchdog.observers import Observer
-from watchdog.events import RegexMatchingEventHandler
+from watchdog.events import FileSystemEventHandler
 
 
 class Reloader:
@@ -30,11 +30,22 @@ class Reloader:
         self.start_command()
 
 
-class ReloadEventHandler(RegexMatchingEventHandler):
+class ReloadEventHandler(FileSystemEventHandler):
 
     def __init__(self, ignore_patterns=[]):
-        super(ReloadEventHandler, self).__init__(regexes=['.*'], ignore_regexes=ignore_patterns, ignore_directories=True, case_sensitive=True)
         self._modified = False
+        self.ignore_patterns = [re.compile(r) for r in ignore_patterns]
+
+    def dispatch(self, event):
+        if event.is_directory:
+            return
+
+        path = os.path.basename(event.src_path)
+
+        if any(r.match(path) for r in self.ignore_patterns):
+            return
+
+        super(ReloadEventHandler, self).dispatch(event)
 
     def on_modified(self, event):
         print "Detected change in %s" % event.src_path
@@ -49,12 +60,26 @@ class ReloadEventHandler(RegexMatchingEventHandler):
             return False
 
 
+def load_patterns(name):
+    patterns = []
+    if os.path.exists(name):
+        with open(name, "r") as f:
+            pass
+            for line in f:
+                p = line.strip()
+                if p:
+                    patterns.append(p)
+    return patterns
+
+
 def main():
     path = "."
     sig = signal.SIGTERM
     delay = 0.5
     command = sys.argv[1:]
-    ignore_patterns = ['.*/[^/]*\.swp', '.*/\d{4}']
+    ignorefile = ".reloadignore"
+    
+    ignore_patterns = load_patterns(ignorefile)
 
     event_handler = ReloadEventHandler(ignore_patterns)
     reloader = Reloader(command, signal)
