@@ -1,55 +1,78 @@
 #!/usr/bin/env python
 
-import sys, os, subprocess, time, signal, re, inotifyx
+import sys, time, re, os, subprocess, signal
+from watchdog.observers import Observer
+from watchdog.events import RegexMatchingEventHandler
 
 
-
-command = sys.argv[1:]
-pid = 0
-
-def ctrlc(signum, frame):
-    if pid > 0:
-        os.killpg(pid, signal.SIGKILL)
-    exit(0)
+class Reloader:
     
-signal.signal(signal.SIGINT, ctrlc)
+    def __init__(self, command, delay=0, sig=signal.SIGTERM):
+        self.command = command
+        self.delay = delay
+        self.sig = sig
+        self.pid = 0
 
-include_pattern = re.compile('.*')
-exclude_pattern = re.compile('.*\.(pyc|sw?|log)')
+    def start_command(self):
+        self.pid = subprocess.Popen(self.command, preexec_fn=os.setsid).pid
 
-def check_file(name):
-    include = include_pattern.match(name)
-    exclude = exclude_pattern.match(name)
-    return include and not exclude
+    def stop_command(self):
+        if self.pid > 0:
+            try:
+                os.killpg(self.pid, sig)
+            except OSError:
+                pass
+            self.pid = 0
 
-def wait(fd):
-    watch = inotifyx.add_watch(fd, '.', inotifyx.IN_MODIFY | inotifyx.IN_CREATE | inotifyx.IN_DELETE)
-    match = False
-    while not match:
-        events = inotifyx.get_events(fd)
-        for event in events:
-            name = event.name
-            if name and check_file(name):
-                match = True
-                break
-    time.sleep(0.5)
-    inotifyx.get_events(fd)
-    inotifyx.rm_watch(fd, watch)
+    def restart_command(self):
+        print "Restarting command"
+        self.stop_command()
+        self.start_command()
 
 
-fd = inotifyx.init()
+class ReloadEventHandler(RegexMatchingEventHandler):
+
+    def __init__(self, ignore_patterns=[]):
+        super(ReloadEventHandler, self).__init__(regexes=['.*'], ignore_regexes=ignore_patterns, ignore_directories=True, case_sensitive=True)
+        self._modified = False
+
+    def on_modified(self, event):
+        print "Detected change in %s" % event.src_path
+        self._modified = True
+
+    @property
+    def modified(self):
+        if self._modified:
+            self._modified = False
+            return True
+        else:
+            return False
+
+
+
+path = "."
+sig = signal.SIGTERM
+delay = 0.5
+command = sys.argv[1:]
+ignore_patterns = ['.*/[^/]*\.swp', '.*/\d{4}']
+
+event_handler = ReloadEventHandler(ignore_patterns)
+reloader = Reloader(command, signal)
+
+observer = Observer()
+observer.schedule(event_handler, path, recursive=True)
+observer.start()
+
+reloader.start_command()
 
 try:
     while True:
-        pid = subprocess.Popen(command, preexec_fn=os.setsid).pid
+        time.sleep(delay)
+        if event_handler.modified:
+            reloader.restart_command()
+except KeyboardInterrupt:
+    observer.stop()
+observer.join()
 
-        wait(fd)
-        print "Kill'em all"
+reloader.stop_command()
 
-        os.killpg(pid, signal.SIGKILL)
-        pid = 0
-
-finally:
-    os.close(fd)
-
-# TODO: Add recursive
