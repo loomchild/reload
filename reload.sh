@@ -2,10 +2,10 @@
 
 IGNORE_FILE=.reloadignore
 IGNORE=""
-SLEEP=1
+SLEEP=0.5
 SIGNAL="-SIGTERM"
 #SIGNAL="-SIGINT"
-
+EVENTS=modify
 
 function ctrlc() {
 	if [ -n "$PID" ]
@@ -28,7 +28,7 @@ fi
 
 echo Watching current directory, ignored file pattern: $IGNORE
 
-INOTIFY_OPTS="-r -q -e close_write"
+INOTIFY_OPTS="-r -q -e $EVENTS"
 
 if [ -n "$IGNORE" ]; then
 	INOTIFY_OPTS="$INOTIFY_OPTS --exclude \"$IGNORE\""
@@ -41,5 +41,6 @@ while true; do
   disown $PID
   kill $SIGNAL $PID
   #sleep $SLEEP  #TODO: smart wait checking if process alive
+  #TODO: loop with inotifywait
 done
 
