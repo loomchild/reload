@@ -73,6 +73,10 @@ def load_patterns(name):
 
 
 def main():
+    if len(sys.argv) < 2:
+        print "Usage: reload <command>"
+        exit(1)
+
     path = "."
     sig = signal.SIGTERM
     delay = 0.5
