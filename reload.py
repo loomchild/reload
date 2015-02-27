@@ -79,7 +79,7 @@ def main():
 
     path = "."
     sig = signal.SIGTERM
-    delay = 0.5
+    delay = 0.25
     command = sys.argv[1:]
     ignorefile = ".reloadignore"
     
