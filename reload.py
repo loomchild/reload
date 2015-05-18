@@ -25,7 +25,7 @@ class Reloader:
             self.pid = 0
 
     def restart_command(self):
-        print "Restarting command"
+        print("Restarting command")
         self.stop_command()
         self.start_command()
 
@@ -48,7 +48,7 @@ class ReloadEventHandler(FileSystemEventHandler):
         super(ReloadEventHandler, self).dispatch(event)
 
     def on_modified(self, event):
-        print "Detected change in %s" % event.src_path
+        print("Detected change in " + event.src_path)
         self._modified = True
 
     @property
@@ -74,7 +74,7 @@ def load_patterns(name):
 
 def main():
     if len(sys.argv) < 2:
-        print "Usage: reload <command>"
+        print("Usage: reload <command>")
         exit(1)
 
     path = "."
