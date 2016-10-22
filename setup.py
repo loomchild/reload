@@ -14,7 +14,7 @@ setup(
     keywords = "reload server",
     url = "https://github.com/loomchild/reload",
     py_modules=['reload'],
-    long_description=read('README.md'),
+    long_description=read('README.rst'),
     classifiers=[
         "Development Status :: 4 - Beta",
         "Topic :: Utilities",
