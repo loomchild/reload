@@ -11,3 +11,7 @@ Usage:
 
 	reload ./server.py
 
+Usage from Python:
+
+    reload_me(remove_arg="-r")
+

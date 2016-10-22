@@ -6,7 +6,7 @@ def read(fname):
 
 setup(
     name = "reload",
-    version = "0.4",
+    version = "0.5",
     author = "Jarek Lipski",
     author_email = "pub@loomchild.net",
     description = ("Reload a program if any file in current directory changes."),
@@ -16,7 +16,7 @@ setup(
     py_modules=['reload'],
     long_description=read('README.txt'),
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Topic :: Utilities",
         "License :: OSI Approved :: MIT License",
     ],

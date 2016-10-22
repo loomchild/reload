@@ -60,7 +60,7 @@ class ReloadEventHandler(FileSystemEventHandler):
             return False
 
 
-def load_patterns(name):
+def load_ignore_patterns(name):
     patterns = []
     if os.path.exists(name):
         with open(name, "r") as f:
@@ -72,18 +72,14 @@ def load_patterns(name):
     return patterns
 
 
-def main():
-    if len(sys.argv) < 2:
-        print("Usage: reload <command>")
-        exit(1)
-
+def reload(command, ignore_patterns=[]):
+    """Reload given commnd"""
     path = "."
     sig = signal.SIGTERM
     delay = 0.25
-    command = sys.argv[1:]
     ignorefile = ".reloadignore"
-    
-    ignore_patterns = load_patterns(ignorefile)
+
+    ignore_patterns = ignore_patterns or load_ignore_patterns(ignorefile)
 
     event_handler = ReloadEventHandler(ignore_patterns)
     reloader = Reloader(command, signal)
@@ -104,6 +100,30 @@ def main():
     observer.join()
 
     reloader.stop_command()
+
+
+def reload_me(remove_arg="", add_arg="", ignore_patterns=[]):
+    """Reload currently running command with removed and/or added arg"""
+    
+    command = sys.argv[:]
+    if remove_arg:
+        command.remove(remove_arg)
+    if add_arg:
+        command.append(add_arg)
+
+    command.insert(0, sys.executable)
+    
+    reload(command, ignore_patterns)
+
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: reload <command>")
+        exit(1)
+
+    command = sys.argv[1:]
+
+    reload(command)
 
 
 if __name__ == "__main__":
