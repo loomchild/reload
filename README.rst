@@ -14,5 +14,5 @@ Usage::
 
 Usage from Python::
 
-    reload_me(remove_arg="-r")
+    reload_me("server")
 

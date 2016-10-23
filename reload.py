@@ -72,8 +72,8 @@ def load_ignore_patterns(name):
     return patterns
 
 
-def reload(command, ignore_patterns=[]):
-    """Reload given commnd"""
+def reload(*command, ignore_patterns=[]):
+    """Reload given command"""
     path = "."
     sig = signal.SIGTERM
     delay = 0.25
@@ -102,18 +102,13 @@ def reload(command, ignore_patterns=[]):
     reloader.stop_command()
 
 
-def reload_me(remove_arg="", add_arg="", ignore_patterns=[]):
-    """Reload currently running command with removed and/or added arg"""
+def reload_me(*args, ignore_patterns=[]):
+    """Reload currently running command with given args"""
     
-    command = sys.argv[:]
-    if remove_arg:
-        command.remove(remove_arg)
-    if add_arg:
-        command.append(add_arg)
+    command = [sys.executable, sys.argv[0]]
+    command.extend(args)
 
-    command.insert(0, sys.executable)
-    
-    reload(command, ignore_patterns)
+    reload(*command, ignore_patterns=ignore_patterns)
 
 
 def main():
@@ -123,7 +118,7 @@ def main():
 
     command = sys.argv[1:]
 
-    reload(command)
+    reload(*command)
 
 
 if __name__ == "__main__":
