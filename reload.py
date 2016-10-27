@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-import sys, time, re, os, subprocess, signal
+import sys, time, re, os, signal, fcntl
+from subprocess import Popen, PIPE, STDOUT
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-
 
 class Reloader:
     
@@ -11,23 +11,42 @@ class Reloader:
         self.command = command
         self.delay = delay
         self.sig = sig
-        self.pid = 0
+        self.process = None
 
     def start_command(self):
-        self.pid = subprocess.Popen(self.command, preexec_fn=os.setsid).pid
+        self.process = Popen(self.command, preexec_fn=os.setsid, stdout=PIPE, stderr=STDOUT)
+        fcntl.fcntl(self.process.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
 
     def stop_command(self):
-        if self.pid > 0:
+        if self.command_started():
             try:
-                os.killpg(self.pid, self.sig)
+                os.killpg(self.process.pid, self.sig)
             except OSError:
                 pass
-            self.pid = 0
+            self.process = None
 
     def restart_command(self):
         print("Restarting command")
         self.stop_command()
         self.start_command()
+
+    def command_started(self):
+        return self.process != None
+
+    def read(self):
+        out = ''
+        more = self.command_started()
+        while more:
+            try:
+                r = self.process.stdout.readline()
+                if not r:
+                    more = False
+                else:
+                    out += r.decode("UTF-8")
+            except IOError:
+                more = False
+
+        return out
 
 
 class ReloadEventHandler(FileSystemEventHandler):
@@ -93,6 +112,7 @@ def reload(*command, ignore_patterns=[]):
     try:
         while True:
             time.sleep(delay)
+            sys.stdout.write(reloader.read())
             if event_handler.modified:
                 reloader.restart_command()
     except KeyboardInterrupt:
