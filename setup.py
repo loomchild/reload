@@ -6,7 +6,7 @@ def read(fname):
 
 setup(
     name = "reload",
-    version = "0.8",
+    version = "0.9",
     author = "Jarek Lipski",
     author_email = "pub@loomchild.net",
     description = ("Reload a program if any file in current directory changes."),
