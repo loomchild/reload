@@ -1,0 +1,5 @@
+0.7 
+    - Programmatic interface for Python
+
+0.8
+    - Display command output
