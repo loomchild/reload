@@ -11,31 +11,29 @@ class Reloader:
         self.command = command
         self.delay = delay
         self.sig = sig
-        self.process = None
+        self.started = False
 
     def start_command(self):
         self.process = Popen(self.command, preexec_fn=os.setsid, stdout=PIPE, stderr=STDOUT)
         fcntl.fcntl(self.process.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
+        self.started = True
 
     def stop_command(self):
-        if self.command_started():
+        if self.started:
             try:
                 os.killpg(self.process.pid, self.sig)
             except OSError:
                 pass
-            self.process = None
+            self.started = False
 
     def restart_command(self):
         print("Restarting command")
         self.stop_command()
         self.start_command()
 
-    def command_started(self):
-        return self.process != None
-
     def read(self):
         out = ''
-        more = self.command_started()
+        more = self.process != None
         while more:
             try:
                 r = self.process.stdout.readline()
@@ -120,6 +118,7 @@ def reload(*command, ignore_patterns=[]):
     observer.join()
 
     reloader.stop_command()
+    sys.stdout.write(reloader.read())
 
 
 def reload_me(*args, ignore_patterns=[]):
