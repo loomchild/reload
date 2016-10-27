@@ -14,7 +14,7 @@ class Reloader:
         self.started = False
 
     def start_command(self):
-        self.process = Popen(self.command, preexec_fn=os.setsid, stdout=PIPE, stderr=STDOUT)
+        self.process = Popen(self.command, preexec_fn=os.setsid, bufsize=0, stdout=PIPE, stderr=STDOUT)
         fcntl.fcntl(self.process.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
         self.started = True
 
@@ -36,7 +36,7 @@ class Reloader:
         more = self.process != None
         while more:
             try:
-                r = self.process.stdout.readline()
+                r = self.process.stdout.read()
                 if not r:
                     more = False
                 else:
@@ -111,6 +111,7 @@ def reload(*command, ignore_patterns=[]):
         while True:
             time.sleep(delay)
             sys.stdout.write(reloader.read())
+            sys.stdout.flush()
             if event_handler.modified:
                 reloader.restart_command()
     except KeyboardInterrupt:
@@ -119,6 +120,7 @@ def reload(*command, ignore_patterns=[]):
 
     reloader.stop_command()
     sys.stdout.write(reloader.read())
+    sys.stdout.flush()
 
 
 def reload_me(*args, ignore_patterns=[]):
